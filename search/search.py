@@ -182,24 +182,19 @@ def search(dataset: str,query: str):
 
 
 
-# @router.get("/search/{dataset}")
-# def search(dataset: str,query: str):
-#     if not os.path.exists(f'./search/{dataset}_speras_matrix.pkl') or not os.path.exists(f'./search/{dataset}_vectorizer.pkl'):
-#         store_index(dataset,1)
-#     # if not os.path.exists(f'./search/{dataset}_model.pkl') or not os.path.exists(f'./serach/{dataset}_cluster_lists.pkl'):
-#     #     make_cluster(dataset)
 
-#     with open(f'./search/{dataset}_speras_matrix.pkl', 'rb') as f:
+
+# @router.get("/search/suggest/{dataset}")
+# def suggest(dataset: str, query: str):
+#     if not os.path.exists(f'./search/{dataset}_speras_matrix_queries.pkl') or not os.path.exists(f'./search/{dataset}_vectorizer_queries.pkl'):
+#         store_index(dataset,2)
+
+#     query = spell(query)
+
+#     with open(f'./search/{dataset}_speras_matrix_queries.pkl', 'rb') as f:
 #         speras_matrix = pickle.load(f)
-#     with open(f'./search/{dataset}_vectorizer.pkl', 'rb') as f:
+#     with open(f'./search/{dataset}_vectorizer_queries.pkl', 'rb') as f:
 #         vectorizer = pickle.load(f)
-#     # with open(f'./search/{dataset}_model.pkl', 'rb') as f:
-#     #     model = pickle.load(f)
-#     # with open(f'./serach/{dataset}_cluster_lists.pkl', 'rb') as f:
-#     #     cluster_lists = pickle.load(f)
-
-#     # labels = model.predict(speras_matrix)
-        
 
 #     vectorizer.preprocessor = preprocessor
 #     vectorizer.tokenizer = tokenizer
@@ -209,30 +204,24 @@ def search(dataset: str,query: str):
 #     cosine_similarities = cosine_similarity(query_vector, speras_matrix).flatten()
 #     best_match_idx = np.argsort(cosine_similarities)[-10:]
 
-#     # clusters = [0] * 25
-#     # for i in best_match_idx:
-#     #     clusters[labels[i]] += 1
-#     # max_cluster = p.Series(clusters).idxmax()
 
-#     df = pd.read_csv(f'./search/datasets/{dataset}/{dataset}_docs.csv')
+#     df = pd.read_csv(f'./search/datasets/{dataset}/{dataset}_queries.csv')
 #     corpus = df['text'].tolist()
-#     doc_id = df['doc_id'].tolist()
 #     retrieved = []
-#     index = []
 #     for i in best_match_idx:
 #         retrieved.append(corpus[i])
-#         index.append(doc_id[i])
 #     retrieved.reverse()
-#     index.reverse()
 
 
-#     return {"retrieved": retrieved, "ID": index}
+#     return {"retrieved": retrieved}
 
 
-@router.get("/search/suggest/{dataset}")
-def suggest(dataset: str, query: str):
+@router.get("/search/realtime_suggestions/{dataset}")
+def realtime_suggestions(dataset: str, query: str):
     if not os.path.exists(f'./search/{dataset}_speras_matrix_queries.pkl') or not os.path.exists(f'./search/{dataset}_vectorizer_queries.pkl'):
-        store_index(dataset,2)
+        store_index(dataset, 2)
+
+    query = spell(query)
 
     with open(f'./search/{dataset}_speras_matrix_queries.pkl', 'rb') as f:
         speras_matrix = pickle.load(f)
@@ -242,22 +231,56 @@ def suggest(dataset: str, query: str):
     vectorizer.preprocessor = preprocessor
     vectorizer.tokenizer = tokenizer
 
-
     query_vector = vectorizer.transform([query])
     cosine_similarities = cosine_similarity(query_vector, speras_matrix).flatten()
-    best_match_idx = np.argsort(cosine_similarities)[-10:]
+#     best_match_idx = np.argsort(cosine_similarities)[-10:]
+
+#    # Assuming best_match_idx is already calculated as shown previously
+#     final_result = []
+
+#     for idx in best_match_idx:
+#     # Calculate the similarity score for the current item
+#         similarity_score = cosine_similarities[idx]
+    
+#     # Define your threshold for similarity
+#         similarity_threshold = 0.1  # Example threshold, adjust based on your requirements
+    
+#         print(similarity_score)
+#     # Check if the item meets the similarity criterion
+#         if similarity_score >= similarity_threshold:
+#         # Append the item to the final result
+#             final_result.append(idx)
+
+    # Assuming cosine_similarities is calculated as shown previously
+    similar_indices = np.argsort(cosine_similarities)
+
+    # Initialize an empty list to hold the indices of matching items
+    matching_indices = []
+
+    # Iterate through the sorted indices
+    for idx in similar_indices:
+        # Retrieve the similarity score for the current index
+        similarity_score = cosine_similarities[idx]
+        
+        # Define your threshold for similarity
+        # Note: Adjust the threshold based on your specific requirements
+        similarity_threshold = 0.5  
+        
+        # Check if the item meets the similarity criterion
+        if similarity_score >= similarity_threshold:
+            # Append the index to the list of matching indices
+            matching_indices.append(idx)
+
+    # Convert the list of matching indices to a NumPy array if needed
+    matching_indices = np.array(matching_indices)
 
 
-    df = pd.read_csv(f'./search/datasets/{dataset}/{dataset}_docs.csv')
+
+    df = pd.read_csv(f'./search/datasets/{dataset}/{dataset}_queries.csv')
     corpus = df['text'].tolist()
-    doc_id = df['doc_id'].tolist()
     retrieved = []
-    index = []
-    for i in best_match_idx:
+    for i in matching_indices:
         retrieved.append(corpus[i])
-        index.append(doc_id[i])
     retrieved.reverse()
-    index.reverse()
 
-
-    return {"retrieved": retrieved, "ID": index}
+    return {"suggestions": retrieved}

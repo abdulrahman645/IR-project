@@ -86,7 +86,7 @@ def preprocessor(text: str):
 
 @router.post("/indexing/build/{dataset}")
 def build_index(dataset: str, corpus: Corpus = Body(...)):
-    df = pd.read_csv(f'./search/datasets/{dataset}/{dataset}_docs.csv')
+    df = pd.read_csv(f'./search/datasets/{dataset}/{dataset}_queries.csv')
     corpus = df['text'].tolist()
 
     vectorizer = TfidfVectorizer(preprocessor=preprocessor, tokenizer=tokenizer)
@@ -109,10 +109,10 @@ def build_index(dataset: str, corpus: Corpus = Body(...)):
     speras_matrix_encoded = base64.b64encode(speras_matrix_data).decode('utf-8')
     vectorizer_encoded = base64.b64encode(vectorizer_data).decode('utf-8')
 
-    with open(f'./search/{dataset}_speras_matrix.pkl', 'wb') as f:
+    with open(f'./search/{dataset}_speras_matrix_queries.pkl', 'wb') as f:
         pickle.dump(speras_matrix, f)
 
-    with open(f'./search/{dataset}_vectorizer.pkl','wb') as f:
+    with open(f'./search/{dataset}_vectorizer_queries.pkl','wb') as f:
         pickle.dump(vectorizer, f)
     
 
